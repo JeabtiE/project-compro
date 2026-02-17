@@ -4,15 +4,11 @@ from scipy.spatial import distance as dist
 from imutils import perspective
 import imutils
 
-# ================================
-# ฟังก์ชัน midpoint 
-# ================================
+
 def midpoint(ptA, ptB):
     return ((ptA[0] + ptB[0]) * 0.5, (ptA[1] + ptB[1]) * 0.5)
 
-# ================================
-# เปิดกล้อง
-# ================================
+
 cap = cv2.VideoCapture(0)
 
 
@@ -21,12 +17,10 @@ while True:
     if not ret:
         break
 
-    # resize 
+
     frame = cv2.resize(frame, None, fx=1, fy=1)
 
-    # =============================
-    # แปลงภาพเป็น Gray → Blur → Threshold
-    # =============================
+   
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (15, 15), 0)
 
@@ -42,9 +36,7 @@ while True:
 
     result_img = closing.copy()
 
-    # ============================
-    # หา Contours
-    # ============================
+   
     cnts = cv2.findContours(result_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
 
@@ -53,7 +45,6 @@ while True:
     for cnt in cnts:
         area = cv2.contourArea(cnt)
 
-        # กรองวัตถุที่เล็กเกินไป
         if area < 3000:
             continue
 
@@ -64,13 +55,9 @@ while True:
         box = np.array(box, dtype="int")
         box = perspective.order_points(box)
 
-        # วาดกรอบ
         orig = frame.copy()
         cv2.drawContours(orig, [box.astype("int")], -1, (0, 255, 0), 2)
 
-        # ----------------------
-        # หา midpoint
-        # ----------------------
         (tl, tr, br, bl) = box
         (tltrX, tltrY) = midpoint(tl, tr)
         (blbrX, blbrY) = midpoint(bl, br)
@@ -78,19 +65,14 @@ while True:
         (tlblX, tlblY) = midpoint(tl, bl)
         (trbrX, trbrY) = midpoint(tr, br)
 
-        # วาดจุด
         cv2.circle(orig, (int(tltrX), int(tltrY)), 5, (0, 255, 0), -1)
         cv2.circle(orig, (int(blbrX), int(blbrY)), 5, (0, 255, 0), -1)
         cv2.circle(orig, (int(tlblX), int(tlblY)), 5, (0, 255, 0), -1)
         cv2.circle(orig, (int(trbrX), int(trbrY)), 5, (0, 255, 0), -1)
 
-        # เส้นกากบาท
         cv2.line(orig, (int(tltrX), int(tltrY)), (int(blbrX), int(blbrY)), (255, 0, 255), 2)
         cv2.line(orig, (int(tlblX), int(tlblY)), (int(trbrX), int(trbrY)), (255, 0, 255), 2)
 
-        # ==========================
-        # คำนวณระยะพิกเซล
-        # ==========================
         lebar_pixel = dist.euclidean((tltrX, tltrY), (blbrX, blbrY))
         panjang_pixel = dist.euclidean((tlblX, tlblY), (trbrX, trbrY))
 
@@ -99,14 +81,8 @@ while True:
         real_width = lebar_pixel * cm_per_pixel
         real_height = panjang_pixel * cm_per_pixel
 
-        # ==========================
-        # โมเดลคำนวณน้ำหนักแบบทรงรี 
-        # ==========================
         weight = (0.0019 * ((2 * real_width * (real_height ** 2) * 3.14) / 3)) + 0.2228
 
-        # ==========================
-        # แสดงข้อมูลบนจอ
-        # ==========================
         cv2.putText(orig, f"L: {real_width:.2f} CM", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
@@ -124,7 +100,6 @@ while True:
 
         cv2.imshow("Camera", orig)
 
-    # ปิดโปรแกรมเมื่อกด ESC
     if cv2.waitKey(1) & 0xFF == 27:
         break
 
